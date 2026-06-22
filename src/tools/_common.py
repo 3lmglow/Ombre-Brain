@@ -345,15 +345,15 @@ async def _merge_or_create_inner(
                 else:
                     # --- LLM 压缩合并（grow 路径）---
                     merged = await rt.dehydrator.merge(bucket["content"], content)
-                old_v = bucket["metadata"].get("valence", 0.5)
-                old_a = bucket["metadata"].get("arousal", 0.3)
+                old_v = bucket["metadata"].get("valence") or 0.5
+                old_a = bucket["metadata"].get("arousal") or 0.3
                 merged_valence = round((old_v + valence) / 2, 2)
                 merged_arousal = round((old_a + arousal) / 2, 2)
                 update_kwargs = dict(
                     content=merged,
-                    tags=list(set(bucket["metadata"].get("tags", []) + tags)),
-                    importance=max(bucket["metadata"].get("importance", 5), importance),
-                    domain=list(set(bucket["metadata"].get("domain", []) + domain)),
+                    tags=list(set((bucket["metadata"].get("tags") or []) + tags)),
+                    importance=max(bucket["metadata"].get("importance") or 5, importance),
+                    domain=list(set((bucket["metadata"].get("domain") or []) + domain)),
                     valence=merged_valence,
                     arousal=merged_arousal,
                 )

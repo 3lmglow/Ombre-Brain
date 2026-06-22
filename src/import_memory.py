@@ -171,7 +171,7 @@ def _parse_chatgpt_json(data: list | dict) -> list[dict]:
                 content = " ".join(str(p) for p in content_parts if p)
                 if not content.strip():
                     continue
-                role = msg.get("author", {}).get("role", "user")
+                role = (msg.get("author") or {}).get("role", "user")
                 ts = msg.get("create_time", "")
                 if isinstance(ts, (int, float)):
                     ts = datetime.fromtimestamp(ts).isoformat()
@@ -182,12 +182,14 @@ def _parse_chatgpt_json(data: list | dict) -> list[dict]:
             for msg in messages:
                 if not isinstance(msg, dict):
                     continue
-                content = str(msg.get("content", msg.get("text", "")) or "")
-                if isinstance(content, dict):
-                    content = " ".join(str(p) for p in content.get("parts", []))
+                content_raw = msg.get("content", msg.get("text", "")) or ""
+                if isinstance(content_raw, dict):
+                    content = " ".join(str(p) for p in content_raw.get("parts", []))
+                else:
+                    content = str(content_raw)
                 if not content or not content.strip():
                     continue
-                role = msg.get("role", msg.get("author", {}).get("role", "user"))
+                role = msg.get("role") or (msg.get("author") or {}).get("role", "user")
                 ts = msg.get("timestamp", msg.get("create_time", ""))
                 turns.append({"role": role, "content": content.strip(), "timestamp": str(ts)})
     return turns
@@ -755,14 +757,14 @@ class ImportEngine:
                 try:
                     merged = await self.dehydrator.merge(bucket["content"], content)
                     self.state.data["api_calls"] += 1
-                    old_v = bucket["metadata"].get("valence", _DEFAULT_VALENCE)
-                    old_a = bucket["metadata"].get("arousal", _DEFAULT_AROUSAL)
+                    old_v = bucket["metadata"].get("valence") or _DEFAULT_VALENCE
+                    old_a = bucket["metadata"].get("arousal") or _DEFAULT_AROUSAL
                     await self.bucket_mgr.update(
                         bucket["id"],
                         content=merged,
-                        tags=list(set(bucket["metadata"].get("tags", []) + tags)),
-                        importance=max(bucket["metadata"].get("importance", _DEFAULT_IMPORTANCE), importance),
-                        domain=list(set(bucket["metadata"].get("domain", []) + domain)),
+                        tags=list(set((bucket["metadata"].get("tags") or []) + tags)),
+                        importance=max(bucket["metadata"].get("importance") or _DEFAULT_IMPORTANCE, importance),
+                        domain=list(set((bucket["metadata"].get("domain") or []) + domain)),
                         valence=round((old_v + valence) / 2, 2),
                         arousal=round((old_a + arousal) / 2, 2),
                     )

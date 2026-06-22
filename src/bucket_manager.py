@@ -429,7 +429,7 @@ class BucketManager:
 
         # --- Assemble Markdown file (frontmatter + body) ---
         # --- 组装 Markdown 文件 ---
-        post = frontmatter.Post(linked_content, **metadata)
+        post = frontmatter.Post(linked_content, **metadata)  # type: ignore[arg-type]
 
         # --- Choose directory by type + primary domain ---
         # --- 按类型 + 主题域选择存储目录 ---
@@ -651,7 +651,7 @@ class BucketManager:
         # NOTE: resolved buckets are NOT auto-archived here.
         # They stay in dynamic/ and decay naturally until score < threshold.
         # 注意：resolved 桶不在此自动归档，留在 dynamic/ 随衰减引擎自然归档。
-        domain = post.get("domain", ["未分类"])
+        domain: list[str] = post.get("domain") or ["未分类"]  # type: ignore[assignment]
         if kwargs.get("pinned") and post.get("type") != "permanent":
             post["type"] = "permanent"
             with open(file_path, "w", encoding="utf-8") as f:
@@ -746,7 +746,7 @@ class BucketManager:
         try:
             post = frontmatter.load(file_path)
             post["last_active"] = now_iso()
-            post["activation_count"] = post.get("activation_count", 0) + 1
+            post["activation_count"] = int(post.get("activation_count") or 0) + 1  # type: ignore[call-overload]
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(frontmatter.dumps(post))
@@ -794,7 +794,7 @@ class BucketManager:
                     continue
                 try:
                     post = frontmatter.load(file_path)
-                    current_count = float(post.get("activation_count", 0))
+                    current_count = float(post.get("activation_count") or 0)  # type: ignore[arg-type]
                     # Store as float for fractional increments; calculate_score handles it
                     post["activation_count"] = round(current_count + _RIPPLE_BOOST, 1)
                     with open(file_path, "w", encoding="utf-8") as f:
@@ -1215,7 +1215,7 @@ class BucketManager:
         try:
             # Read once, get domain info and update type / 一次性读取
             post = frontmatter.load(file_path)
-            domain = post.get("domain", [_DEFAULT_DOMAIN_NAME])
+            domain: list[str] = post.get("domain") or [_DEFAULT_DOMAIN_NAME]  # type: ignore[assignment]
             primary_domain = self._primary_domain(domain)
             archive_subdir = os.path.join(self.archive_dir, primary_domain)
             os.makedirs(archive_subdir, exist_ok=True)
@@ -1253,7 +1253,7 @@ class BucketManager:
         for _root, _fname, full_path in self._iter_md_files(self._active_dirs):
             try:
                 post = frontmatter.load(full_path)
-                for t in (post.get("tags") or []):
+                for t in list(post.get("tags") or []):  # type: ignore[call-overload]
                     if t:
                         tags.add(str(t))
             except Exception:

@@ -296,7 +296,7 @@ class MigrateEngine:
                     meta = json.loads(raw_meta.decode("utf-8"))
                     emb_info = meta.get("embedding", {})
                     import_model = emb_info.get("model", "")
-                    import_model_dim = int(emb_info.get("dim", 0))
+                    import_model_dim = int(emb_info.get("dim") or 0)
                     import_backend = emb_info.get("backend", "")
                 except Exception as e:
                     logger.warning(f"[migrate] export_meta.json 解析失败，将跳过向量恢复: {e}")
